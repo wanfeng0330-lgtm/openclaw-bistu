@@ -1,0 +1,34 @@
+{
+  "bistu_sso": {
+    "base_url": "https://wxjw.bistu.edu.cn",
+    "username": "",
+    "password": "",
+    "login_method": "password",
+    "_comment_login_method": "支持: password"
+  },
+  "jwxt": {
+    "base_url": "https://jwxt.bistu.edu.cn",
+    "_comment": "教管平台，使用 SSO Cookie + CSRF Token (_WEU) 自动登录"
+  },
+  "ywtb": {
+    "base_url": "https://my.bistu.edu.cn",
+    "_comment": "一网通办平台，公开API无需认证，登录需RSA加密密码"
+  },
+  "chaoxing": {
+    "base_url": "https://mooc1-1.chaoxing.com",
+    "phone": "",
+    "password": "",
+    "_comment": "超星学习通账号，手机号+密码登录"
+  },
+  "bistu_email": {
+    "address": "",
+    "password": "",
+    "imap_server": "imap.bistu.edu.cn",
+    "smtp_server": "smtp.bistu.edu.cn",
+    "_comment": "校园邮箱 IMAP/SMTP 配置，可选"
+  },
+  "campus": {
+    "default_campus": "小营",
+    "_comment_campuses": "小营 / 清河 / 太行路"
+  }
+}
