@@ -125,10 +125,10 @@ python3 scripts/generate_ppt.py --list-templates
 python3 scripts/generate_ppt.py \
   --title "标题" \
   --markdown content.md \
-  --template "BISTU通用PPT模板.pptx" \
+  --template "PPT-浅蓝色.pptx" \
   --output output.pptx
 ```
-模板目录: `templates/`
+模板目录: `templates/`，内置浅蓝色主题模板
 
 ### 12. GPA 计算
 **触发**: "GPA"、"绩点"、"算GPA"
