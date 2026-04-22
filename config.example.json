@@ -28,7 +28,7 @@
     "_comment": "校园邮箱 IMAP/SMTP 配置，可选"
   },
   "campus": {
-    "default_campus": "小营",
-    "_comment_campuses": "小营 / 清河 / 太行路"
+    "default_campus": "沙河",
+    "_comment_campuses": "沙河 / 小营"
   }
 }

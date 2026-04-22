@@ -124,16 +124,36 @@ def cmd_week(args):
 # ── 食堂推荐 ──────────────────────────────────────────
 
 CANTEEN_DATA = {
+    "沙河": [
+        {
+            "name": "一食堂",
+            "floors": 3,
+            "rating": 4.3,
+            "detail": {
+                1: ["基本伙", "御膳房烤鸭刀削面", "四季粥饼", "昌顺马记"],
+                2: ["肯德基", "霸蛮米线", "小鱼大作", "西式简餐", "醉面", "武圣羊汤", "呈记烧卤", "驴肉火烧"],
+                3: ["粤来越鲜", "自选菜", "瓦罐汤", "石磨肠粉"],
+            },
+            "features": ["烤鸭刀削面", "肯德基", "粤来越鲜", "瓦罐汤", "石磨肠粉"],
+        },
+        {
+            "name": "二食堂",
+            "floors": 4,
+            "rating": 4.5,
+            "detail": {
+                1: ["陕西凉皮肉夹馍", "川湘木桶饭", "基本伙"],
+                2: ["自选菜", "果切", "民族餐厅", "味之佳韩式炸鸡", "张亮麻辣烫", "时光卷卷寿司", "下课炸一串", "一纸鸡锡纸烤肉饭"],
+                3: ["味之佳汉堡", "好伦哥", "风味小吃", "闷锅饭烤鱼饭", "滑蛋饭", "石锅拌饭", "糊涂婶老式黏糊麻辣烫"],
+                4: ["川湘菜", "M小俄餐猪排饭", "炉知府炙烤五花肉", "茶瀑布"],
+            },
+            "features": ["韩式炸鸡", "张亮麻辣烫", "好伦哥", "石锅拌饭", "M小俄餐猪排饭", "茶瀑布"],
+            "nearby": ["蜜雪冰城", "茶百道"],
+        },
+    ],
     "小营": [
         {"name": "一食堂", "floors": 2, "features": ["自选菜", "面食", "麻辣烫"], "rating": 4.2},
         {"name": "二食堂", "floors": 3, "features": ["自选菜", "烧烤", "奶茶", "水果"], "rating": 4.5},
         {"name": "教工食堂", "floors": 1, "features": ["小炒", "套餐"], "rating": 4.0},
-    ],
-    "清河": [
-        {"name": "清河食堂", "floors": 2, "features": ["自选菜", "面食", "煎饼"], "rating": 4.1},
-    ],
-    "太行路": [
-        {"name": "新食堂", "floors": 2, "features": ["自选菜", "麻辣香锅", "咖啡"], "rating": 4.3},
     ],
 }
 
@@ -147,19 +167,39 @@ def cmd_canteen(args):
     canteens = CANTEEN_DATA.get(campus, [])
     if not canteens:
         print(f"📭 未找到 {campus} 校区的食堂信息")
+        print(f"  可选校区: {', '.join(CANTEEN_DATA.keys())}")
         return
 
     lines = [f"🍽️ {campus}校区食堂推荐："]
     for c in canteens:
         stars = "⭐" * int(c["rating"])
-        features = "、".join(c["features"])
-        lines.append(f"  • {c['name']} ({c['floors']}层) | {stars} | 特色: {features}")
+        lines.append(f"\n  🏢 {c['name']} ({c['floors']}层) | {stars}")
+
+        # 如果有详细楼层信息，逐层展示
+        if "detail" in c:
+            for floor, shops in c["detail"].items():
+                lines.append(f"    {floor}F: {'、'.join(shops)}")
+        elif "features" in c:
+            lines.append(f"    特色: {'、'.join(c['features'])}")
+
+        # 周边饮品
+        if "nearby" in c:
+            lines.append(f"    🥤 周边: {'、'.join(c['nearby'])}")
 
     # 随机推荐
     import random
     if canteens:
         pick = random.choice(canteens)
-        print(f"\n🎲 今日推荐: {pick['name']}，试试 {random.choice(pick['features'])} 吧！")
+        # 优先从楼层详情中随机推荐
+        if "detail" in pick:
+            floor = random.choice(list(pick["detail"].keys()))
+            shop = random.choice(pick["detail"][floor])
+            print("\n".join(lines))
+            print(f"\n🎲 今日推荐: {pick['name']} {floor}F 「{shop}」，去尝尝吧！")
+        else:
+            feat = random.choice(pick["features"]) if pick.get("features") else ""
+            print("\n".join(lines))
+            print(f"\n🎲 今日推荐: {pick['name']}，试试{feat}吧！")
 
 
 # ── 图书馆查询 ────────────────────────────────────────
