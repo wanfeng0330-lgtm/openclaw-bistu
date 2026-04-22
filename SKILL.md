@@ -1,9 +1,9 @@
 ---
 name: bistu-campus
-version: 2.0.0
+version: 3.0.0
 license: MIT
 description: |
-  北京信息科技大学全能校园助手。覆盖教务管理、一网通办、学习通、校园生活等 21 项功能，专为北信科学子打造。
+  北京信息科技大学全能校园助手。覆盖教务管理、一网通办、学习通、校园生活等 30 项功能，专为北信科学子打造。
   触发场景:
   (1) 用户询问课程表、本周课程安排
   (2) 用户查询培养方案、学业进度
@@ -17,7 +17,14 @@ description: |
   (10) 用户需要生成北信科 PPT
   (11) 用户查询食堂、校园生活信息
   (12) 用户需要换源、正版软件、在线工具
-  触发词: 课表, 课程, 成绩, GPA, 待办, DDL, 作业, 选课, 校历, 教学周, 一网通办, 办事, 学习通, 签到, PPT, 食堂, 图书馆, 空闲教室, 自习, 考试, chaoxing
+  (13) 用户查询个人信息、学籍状态
+  (14) 用户查询选课批次、已选课程
+  (15) 用户查询评教状态、未评教课程
+  (16) 用户查看教务通知公告
+  (17) 用户查询学期周次安排
+  (18) 用户查询补考安排
+  (19) 用户查询全部学期成绩汇总
+  触发词: 课表, 课程, 成绩, GPA, 待办, DDL, 作业, 选课, 校历, 教学周, 一网通办, 办事, 学习通, 签到, PPT, 食堂, 图书馆, 空闲教室, 自习, 考试, chaoxing, 学籍, 个人信息, 评教, 通知, 补考
 ---
 
 # BISTU Campus — 北京信息科技大学全能校园助手
@@ -45,14 +52,28 @@ python3 scripts/jwxt_api.py scores [--term 2025-2026-1]
 ```
 查询指定学期的成绩，包含课程名、分数、课程类型、学分、是否通过。默认查询当前学期。
 
-### 4. 考试安排
+### 4. 全部成绩汇总
+**触发**: "所有成绩"、"历年成绩"、"全部成绩"
+```bash
+python3 scripts/jwxt_api.py all-scores
+```
+查询所有学期的成绩汇总，按学期分组展示，含总学分和通过率统计。
+
+### 5. 考试安排
 **触发**: "考试"、"什么时候考试"、"考试安排"
 ```bash
 python3 scripts/jwxt_api.py exams [--term 2025-2026-2]
 ```
 查询考试时间、地点、座位号、考试状态。
 
-### 5. 学习通课程管理
+### 6. 补考安排
+**触发**: "补考"、"补考什么时候"、"补考安排"
+```bash
+python3 scripts/jwxt_api.py retake-exams [--term 2025-2026-2]
+```
+查询补考时间、地点等信息。
+
+### 7. 学习通课程管理
 **触发**: "学习通"、"超星"、"chaoxing"、"学习通作业"
 ```bash
 python3 scripts/chaoxing_api.py courses
@@ -63,7 +84,7 @@ python3 scripts/chaoxing_api.py checkin [--course COURSE_NAME]
 - `tasks`: 查看未完成作业/活动（通过 activelist API，筛选未参与且未过期的活动）
 - `checkin`: 查看待签到课程（需在手机端完成签到）
 
-### 6. 待办事项
+### 8. 待办事项
 **触发**: "待办"、"DDL"、"作业截止"、"还有什么没做"
 ```bash
 python3 scripts/jwxt_api.py todo [--type student]
@@ -75,7 +96,7 @@ python3 scripts/jwxt_api.py todo-details
 
 ## 高频功能（每月多次）
 
-### 7. 空闲教室查询
+### 9. 空闲教室查询
 **触发**: "空闲教室"、"自习室"、"哪里可以自习"
 ```bash
 python3 scripts/jwxt_api.py rooms [--campus 小营] [--week 8] [--weekday 2] [--section 3]
@@ -87,7 +108,7 @@ python3 scripts/jwxt_api.py rooms [--campus 小营] [--week 8] [--weekday 2] [--
 - `--section`: 第几节（0=全天）
 - 按上午/下午/晚上分段显示空闲时段
 
-### 8. 校历 + 教学周
+### 10. 校历 + 教学周
 **触发**: "校历"、"第几周"、"什么时候放假"、"考试周"
 ```bash
 python3 scripts/campus_life.py calendar
@@ -95,7 +116,14 @@ python3 scripts/campus_life.py week
 ```
 自动计算当前教学周，展示学期重要时间节点。
 
-### 9. 一网通办
+### 11. 学期周次查询
+**触发**: "学期周次"、"这学期周历"、"每周日期"
+```bash
+python3 scripts/jwxt_api.py term-weeks [--term 2025-2026-2]
+```
+查询学期每周的起止日期，标记当前周。
+
+### 12. 一网通办
 **触发**: "一网通办"、"办事"、"怎么办"、"服务"
 ```bash
 python3 scripts/ywtb_api.py info
@@ -108,7 +136,21 @@ python3 scripts/ywtb_api.py search KEYWORD
 - `services`: 服务分类
 - `search`: 搜索服务/应用
 
-### 10. 开课单位查询
+### 13. 个人信息查询
+**触发**: "我的信息"、"个人信息"、"我是谁"
+```bash
+python3 scripts/jwxt_api.py info
+```
+查询学生姓名、学号、性别、年级、学院、专业、班级、校区等基本信息。
+
+### 14. 学籍信息查询
+**触发**: "学籍"、"学籍状态"、"注册状态"
+```bash
+python3 scripts/jwxt_api.py status
+```
+查询学籍状态、注册状态、学制、入学日期、预计毕业日期等。
+
+### 15. 开课单位查询
 **触发**: "开课单位"、"哪个学院开的课"
 ```bash
 python3 scripts/jwxt_api.py departments
@@ -118,7 +160,49 @@ python3 scripts/jwxt_api.py departments
 
 ## 实用功能（需要时用）
 
-### 11. 北信科 PPT 一键生成
+### 16. 选课查询
+**触发**: "已选课程"、"我选了什么课"、"选了哪些课"
+```bash
+python3 scripts/jwxt_api.py selected-courses [--term 2025-2026-2]
+```
+查询当前学期已选课程列表，含课程名、教师、学分、课程类型。
+
+### 17. 选课批次查询
+**触发**: "选课批次"、"什么时候选课"、"选课时间"
+```bash
+python3 scripts/jwxt_api.py selection-batches [--term 2025-2026-2]
+```
+查询选课批次信息，含批次名称、起止时间、是否进行中。
+
+### 18. 评教状态查询
+**触发**: "评教"、"评教了吗"、"还没评教"
+```bash
+python3 scripts/jwxt_api.py evaluation [--term 2025-2026-2]
+```
+查询评教完成情况，显示已评/未评课程数和未评教课程列表。
+
+### 19. 教务通知公告
+**触发**: "教务通知"、"公告"、"教务处通知"
+```bash
+python3 scripts/jwxt_api.py notices [--page 1] [--size 10]
+```
+查询教务通知公告列表，含标题、发布日期、发布部门。
+
+### 20. 学业情况汇总
+**触发**: "学业情况"、"学业汇总"、"我的学业"
+```bash
+python3 scripts/jwxt_api.py academic-summary
+```
+查询学业情况汇总，含GPA、排名、已获学分、课程通过情况等。
+
+### 21. 教室列表查询
+**触发**: "教室列表"、"有哪些教室"、"教室信息"
+```bash
+python3 scripts/jwxt_api.py classrooms [--campus 沙河]
+```
+查询所有教室信息，按校区分组显示，含教室名称和容量。
+
+### 22. 北信科 PPT 一键生成
 **触发**: "做PPT"、"PPT模板"、"生成PPT"
 ```bash
 python3 scripts/generate_ppt.py --list-templates
@@ -130,34 +214,34 @@ python3 scripts/generate_ppt.py \
 ```
 模板目录: `templates/`，内置浅蓝色主题模板
 
-### 12. GPA 计算
+### 23. GPA 计算
 **触发**: "GPA"、"绩点"、"算GPA"
 ```bash
 python3 scripts/gpa_calculator.py
 ```
 支持标准 4.0 制和北信科自定义算法（绩点 = (分数-50)/10）。
 
-### 13. 食堂推荐
+### 24. 食堂推荐
 **触发**: "吃什么"、"食堂"、"美食"
 ```bash
 python3 scripts/campus_life.py canteen [--campus CAMPUS]
 ```
 `--campus` 可选: 小营/清河/太行路。
 
-### 14. 图书馆查询
+### 25. 图书馆查询
 **触发**: "图书馆"、"借书"、"开馆时间"
 ```bash
 python3 scripts/campus_life.py library [--action info/search] [--keyword KEYWORD]
 ```
 
-### 15. 学习通签到助手
+### 26. 学习通签到助手
 **触发**: "签到"、"打卡"、"sign"
 ```bash
 python3 scripts/chaoxing_api.py checkin --all
 ```
 签到功能仅提供提醒和状态查询，实际签到需在手机端完成。
 
-### 16. 校园邮箱
+### 27. 校园邮箱
 **触发**: "邮件"、"邮箱"、"有没有新邮件"
 ```bash
 python3 scripts/campus_life.py email [--action list] [--limit 10]
@@ -168,36 +252,24 @@ python3 scripts/campus_life.py email [--action list] [--limit 10]
 
 ## 工具功能（辅助工具）
 
-### 17. 镜像换源
+### 28. 镜像换源
 **触发**: "换源"、"pip源"、"清华源"
 ```bash
 python3 scripts/campus_life.py mirror --tool pip/npm
 ```
 
-### 18. 正版软件
+### 29. 正版软件
 **触发**: "正版软件"、"免费软件"、"Office"
 ```bash
 python3 scripts/campus_life.py software
 ```
 
-### 19. 在线工具
-**触发**: "在线工具"、"LaTeX"、"工具"
+### 30. 在线工具 + 往年资源
+**触发**: "在线工具"、"LaTeX"、"往年题"、"题库"
 ```bash
 python3 scripts/campus_life.py online-tools
-```
-
-### 20. 校园邮箱
-**触发**: "邮件"、"收邮件"
-```bash
-python3 scripts/campus_life.py email --action list --limit 10
-```
-
-### 21. 往年资源
-**触发**: "往年题"、"试卷"、"题库"
-```bash
 python3 scripts/campus_life.py past-exams --course 高等数学
 ```
-功能开发中，推荐访问学校资源平台。
 
 ---
 
@@ -248,4 +320,5 @@ pip3 install pycryptodome
 3. **学习通签到仅提供提醒功能**，请在手机端完成实际签到
 4. **一网通办登录需要 RSA 加密**，安装 pycryptodome: `pip install pycryptodome`
 5. **空闲教室基于课表数据推断**，非官方独立API，可能存在偏差
-6. **遵守学校网络安全规定**，本工具仅供个人学习使用
+6. **部分 API 端点可能因学校配置不同而不可用**，脚本会友好提示
+7. **遵守学校网络安全规定**，本工具仅供个人学习使用

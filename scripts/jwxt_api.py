@@ -2,7 +2,8 @@
 """
 北京信息科技大学教管平台 API
 基于金智教育 (正方) 微服务平台
-支持: 课表查询、培养方案查询、待办查询、成绩查询
+支持: 课表查询、培养方案查询、待办查询、成绩查询、考试查询、
+     空闲教室、个人信息、学籍信息、选课查询、评教查询、通知公告、学期周次
 """
 
 import argparse
@@ -497,6 +498,413 @@ class JWXTApi:
 
     # ── 辅助方法 ──────────────────────────────────────
 
+    # ── 个人信息 ──────────────────────────────────────
+
+    def get_student_info(self) -> dict:
+        """查询学生个人基本信息"""
+        data = self._api_post("student/studentInfo.do")
+        if data.get("code") == "0":
+            return data.get("datas", {})
+        return {}
+
+    def format_student_info(self, info: dict) -> str:
+        """格式化个人信息输出"""
+        if not info:
+            return "暂无个人信息数据"
+
+        lines = ["👤 学生个人信息："]
+        field_map = {
+            "studentName": "姓名",
+            "studentCode": "学号",
+            "gender": "性别",
+            "grade": "年级",
+            "collegeName": "学院",
+            "majorName": "专业",
+            "className": "班级",
+            "studentType": "学生类型",
+            "educationLevel": "学历层次",
+            "campusName": "校区",
+            "phone": "联系电话",
+            "email": "邮箱",
+        }
+        for key, label in field_map.items():
+            val = info.get(key, "")
+            if val:
+                lines.append(f"  {label}: {val}")
+
+        # 如果上面的字段没有命中，展示所有非空字段
+        if len(lines) <= 2:
+            for key, val in info.items():
+                if val and key not in field_map:
+                    lines.append(f"  {key}: {val}")
+
+        return "\n".join(lines)
+
+    # ── 学籍信息 ──────────────────────────────────────
+
+    def get_student_status(self) -> dict:
+        """查询学籍信息（更详细的学籍状态）"""
+        data = self._api_post("student/studentStatus.do")
+        if data.get("code") == "0":
+            return data.get("datas", {})
+        return {}
+
+    def format_student_status(self, info: dict) -> str:
+        """格式化学籍信息输出"""
+        if not info:
+            return "暂无学籍信息数据"
+
+        lines = ["📋 学籍信息："]
+        field_map = {
+            "studentName": "姓名",
+            "studentCode": "学号",
+            "gender": "性别",
+            "status": "学籍状态",
+            "registerStatus": "注册状态",
+            "grade": "年级",
+            "collegeName": "学院",
+            "majorName": "专业",
+            "className": "班级",
+            "educationLevel": "学历层次",
+            "studyDuration": "学制",
+            "admissionDate": "入学日期",
+            "expectedGraduationDate": "预计毕业日期",
+        }
+        for key, label in field_map.items():
+            val = info.get(key, "")
+            if val:
+                lines.append(f"  {label}: {val}")
+
+        if len(lines) <= 2:
+            for key, val in info.items():
+                if val and key not in field_map:
+                    lines.append(f"  {key}: {val}")
+
+        return "\n".join(lines)
+
+    # ── 选课查询 ──────────────────────────────────────
+
+    def get_selected_courses(self, term_code: str = "") -> list:
+        """
+        查询已选课程
+
+        Args:
+            term_code: 学期代码，如 "2025-2026-2"
+        """
+        self._ensure_session()
+        if not term_code:
+            term_code = self._get_current_term_code()
+        data = self._api_post("student/selectedCourses.do", {"termCode": term_code})
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_selected_courses(self, courses: list, term_code: str = "") -> str:
+        """格式化已选课程输出"""
+        if not courses:
+            return f"学期 {term_code} 暂无已选课程数据"
+
+        lines = [f"📚 已选课程（学期: {term_code}，共 {len(courses)} 门）："]
+        for c in courses:
+            name = c.get("courseName", "")
+            teacher = c.get("teacherName", "")
+            credit = c.get("credit", 0)
+            course_type = c.get("courseType", "")
+            lines.append(f"  • {name} | {teacher} | {credit}学分 | {course_type}")
+        return "\n".join(lines)
+
+    # ── 选课批次 ──────────────────────────────────────
+
+    def get_course_selection_batches(self, term_code: str = "") -> list:
+        """
+        查询选课批次
+
+        Args:
+            term_code: 学期代码
+        """
+        self._ensure_session()
+        if not term_code:
+            term_code = self._get_current_term_code()
+        data = self._api_post("student/courseSelectionBatches.do", {"termCode": term_code})
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_course_selection_batches(self, batches: list, term_code: str = "") -> str:
+        """格式化选课批次输出"""
+        if not batches:
+            return f"学期 {term_code} 暂无选课批次"
+
+        lines = [f"🗳️ 选课批次（学期: {term_code}）："]
+        for b in batches:
+            name = b.get("batchName", "")
+            status = "🟢 进行中" if b.get("isActive") else "🔴 已结束"
+            start = b.get("startTime", "")
+            end = b.get("endTime", "")
+            lines.append(f"  {status} {name} | {start} ~ {end}")
+        return "\n".join(lines)
+
+    # ── 评教查询 ──────────────────────────────────────
+
+    def get_evaluation_status(self, term_code: str = "") -> dict:
+        """
+        查询评教状态
+
+        Args:
+            term_code: 学期代码
+        """
+        self._ensure_session()
+        if not term_code:
+            term_code = self._get_current_term_code()
+        data = self._api_post("student/evaluationStatus.do", {"termCode": term_code})
+        if data.get("code") == "0":
+            return data.get("datas", {})
+        return {}
+
+    def format_evaluation_status(self, data: dict, term_code: str = "") -> str:
+        """格式化评教状态输出"""
+        if not data:
+            return f"学期 {term_code} 暂无评教数据"
+
+        evaluated = data.get("evaluatedCount", 0)
+        total = data.get("totalCount", 0)
+        unevaluated = total - evaluated
+
+        lines = [f"📝 评教状态（学期: {term_code}）："]
+        lines.append(f"  已评教: {evaluated}/{total}")
+        if unevaluated > 0:
+            lines.append(f"  ⚠️ 未评教: {unevaluated} 门")
+
+        # 显示未评教课程列表
+        uneval_list = data.get("unevaluatedCourses", [])
+        if uneval_list:
+            lines.append("  未评教课程：")
+            for c in uneval_list:
+                lines.append(f"    • {c.get('courseName', '')} | {c.get('teacherName', '')}")
+
+        return "\n".join(lines)
+
+    # ── 通知公告 ──────────────────────────────────────
+
+    def get_notices(self, page: int = 1, page_size: int = 10) -> dict:
+        """
+        获取教务通知公告
+
+        Args:
+            page: 页码
+            page_size: 每页条数
+        """
+        data = self._api_post("notice/notices.do", {
+            "pageNumber": str(page),
+            "pageSize": str(page_size),
+        })
+        if data.get("code") == "0":
+            return data.get("datas", {})
+        return {}
+
+    def format_notices(self, data: dict) -> str:
+        """格式化通知公告输出"""
+        if not data:
+            return "暂无通知公告"
+
+        notices = data.get("rows", data.get("notices", []))
+        if not notices:
+            return "暂无通知公告"
+
+        lines = ["📢 教务通知公告："]
+        for n in notices[:10]:
+            title = n.get("title", n.get("noticeTitle", ""))
+            date = n.get("publishDate", n.get("createTime", ""))
+            dept = n.get("departmentName", n.get("publisherName", ""))
+            lines.append(f"  • [{date}] {title}")
+            if dept:
+                lines[-1] += f" — {dept}"
+
+        total = data.get("total", len(notices))
+        if total > 10:
+            lines.append(f"  ... 共 {total} 条通知")
+        return "\n".join(lines)
+
+    # ── 学期周次 ──────────────────────────────────────
+
+    def get_term_weeks(self, term_code: str = "") -> list:
+        """
+        获取学期周次信息
+
+        Args:
+            term_code: 学期代码
+        """
+        self._ensure_session()
+        if not term_code:
+            term_code = self._get_current_term_code()
+        data = self._api_post("getTermWeeks.do", {"termCode": term_code})
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_term_weeks(self, weeks: list, term_code: str = "") -> str:
+        """格式化学期周次输出"""
+        if not weeks:
+            return f"学期 {term_code} 暂无周次数据"
+
+        lines = [f"📅 学期周次（学期: {term_code}）："]
+        for w in weeks:
+            serial = w.get("serialNumber", "")
+            start = w.get("startDate", "")
+            end = w.get("endDate", "")
+            is_current = " ◀ 当前周" if w.get("curWeek") else ""
+            lines.append(f"  第{serial}周: {start} ~ {end}{is_current}")
+        return "\n".join(lines)
+
+    # ── 学业情况 ──────────────────────────────────────
+
+    def get_academic_summary(self) -> dict:
+        """查询学业情况汇总"""
+        data = self._api_post("student/academicSummary.do")
+        if data.get("code") == "0":
+            return data.get("datas", {})
+        return {}
+
+    def format_academic_summary(self, data: dict) -> str:
+        """格式化学业情况输出"""
+        if not data:
+            return "暂无学业情况数据"
+
+        lines = ["📊 学业情况汇总："]
+        field_map = {
+            "totalCredit": "总学分要求",
+            "gainedCredit": "已获学分",
+            "gpa": "GPA",
+            "rank": "年级排名",
+            "totalStudents": "年级人数",
+            "passedCourses": "已通过课程",
+            "failedCourses": "未通过课程",
+        }
+        for key, label in field_map.items():
+            val = data.get(key, "")
+            if val:
+                lines.append(f"  {label}: {val}")
+
+        if len(lines) <= 2:
+            for key, val in data.items():
+                if val and key not in field_map:
+                    lines.append(f"  {key}: {val}")
+
+        return "\n".join(lines)
+
+    # ── 教室查询 ──────────────────────────────────────
+
+    def get_classroom_list(self, campus: str = "") -> list:
+        """
+        查询教室列表
+
+        Args:
+            campus: 校区筛选
+        """
+        params = {}
+        if campus:
+            params["campus"] = campus
+        data = self._api_post("classroom/classroomList.do", params)
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_classroom_list(self, rooms: list) -> str:
+        """格式化教室列表输出"""
+        if not rooms:
+            return "暂无教室数据"
+
+        lines = [f"🏫 教室列表（共 {len(rooms)} 个）："]
+        by_campus = {}
+        for r in rooms:
+            campus = r.get("campusName", r.get("campus", "未知"))
+            if campus not in by_campus:
+                by_campus[campus] = []
+            by_campus[campus].append(r)
+
+        for campus, campus_rooms in by_campus.items():
+            lines.append(f"\n  📍 {campus}：")
+            for r in campus_rooms[:20]:
+                name = r.get("roomName", r.get("classroomName", ""))
+                capacity = r.get("capacity", r.get("seatCount", ""))
+                cap_str = f" ({capacity}人)" if capacity else ""
+                lines.append(f"    • {name}{cap_str}")
+            if len(campus_rooms) > 20:
+                lines.append(f"    ... 共 {len(campus_rooms)} 个教室")
+
+        return "\n".join(lines)
+
+    # ── 补考查询 ──────────────────────────────────────
+
+    def get_retake_exams(self, term_code: str = "") -> list:
+        """
+        查询补考安排
+
+        Args:
+            term_code: 学期代码
+        """
+        self._ensure_session()
+        if not term_code:
+            term_code = self._get_current_term_code()
+        data = self._api_post("student/retakeExams.do", {"termCode": term_code})
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_retake_exams(self, exams: list, term_code: str = "") -> str:
+        """格式化补考安排输出"""
+        if not exams:
+            return f"学期 {term_code} 暂无补考安排"
+
+        lines = [f"🔄 补考安排（学期: {term_code}）："]
+        for e in exams:
+            lines.append(
+                f"  • {e.get('courseName', '')} | {e.get('examTime', '')} | {e.get('examPlace', '')}"
+            )
+        return "\n".join(lines)
+
+    # ── 成绩详情（所有学期） ──────────────────────────
+
+    def get_all_scores(self) -> list:
+        """查询所有学期成绩"""
+        data = self._api_post("student/allScores.do")
+        if data.get("code") == "0":
+            return data.get("datas", [])
+        return []
+
+    def format_all_scores(self, scores: list) -> str:
+        """格式化所有学期成绩输出"""
+        if not scores:
+            return "暂无成绩数据"
+
+        # 按学期分组
+        by_term = {}
+        for s in scores:
+            term = s.get("termCode", s.get("termName", "未知学期"))
+            if term not in by_term:
+                by_term[term] = []
+            by_term[term].append(s)
+
+        lines = ["📊 全部成绩："]
+        for term, term_scores in by_term.items():
+            passed = sum(1 for s in term_scores if s.get("passStatus"))
+            total_credit = sum(s.get("credit", 0) for s in term_scores if s.get("passStatus"))
+            lines.append(f"\n  📅 {term} ({passed}/{len(term_scores)} 门通过, {total_credit} 学分)：")
+            for s in term_scores:
+                status = "✅" if s.get("passStatus") else "❌"
+                lines.append(
+                    f"    {status} {s.get('courseName', '')} | {s.get('score', '-')} | "
+                    f"{s.get('courseType', '')} | {s.get('credit', 0)}学分"
+                )
+
+        # 总计
+        total_credit = sum(s.get("credit", 0) for s in scores if s.get("passStatus"))
+        total_passed = sum(1 for s in scores if s.get("passStatus"))
+        lines.append(f"\n  总计: {total_passed}/{len(scores)} 门通过, {total_credit} 学分")
+        return "\n".join(lines)
+
+    # ── 原辅助方法 ──────────────────────────────────────
+
     def _get_current_term_code(self) -> str:
         """自动推算当前学期代码"""
         now = datetime.now()
@@ -582,9 +990,16 @@ def main():
     scores_parser = subparsers.add_parser("scores", help="查询成绩")
     scores_parser.add_argument("--term", type=str, default="", help="学期代码 (如 2025-2026-1)")
 
+    # 全部成绩
+    subparsers.add_parser("all-scores", help="查询所有学期成绩")
+
     # 考试
     exams_parser = subparsers.add_parser("exams", help="查询考试安排")
     exams_parser.add_argument("--term", type=str, default="", help="学期代码 (如 2025-2026-2)")
+
+    # 补考
+    retake_parser = subparsers.add_parser("retake-exams", help="查询补考安排")
+    retake_parser.add_argument("--term", type=str, default="", help="学期代码")
 
     # 空闲教室
     room_parser = subparsers.add_parser("rooms", help="查询空闲教室")
@@ -593,6 +1008,40 @@ def main():
     room_parser.add_argument("--week", type=int, default=0, help="周次 (0=当前周)")
     room_parser.add_argument("--weekday", type=int, default=0, help="星期几 (1=周一, 0=今天)")
     room_parser.add_argument("--section", type=int, default=0, help="第几节 (0=全天)")
+
+    # 个人信息
+    subparsers.add_parser("info", help="查询学生个人信息")
+
+    # 学籍信息
+    subparsers.add_parser("status", help="查询学籍信息")
+
+    # 已选课程
+    selected_parser = subparsers.add_parser("selected-courses", help="查询已选课程")
+    selected_parser.add_argument("--term", type=str, default="", help="学期代码")
+
+    # 选课批次
+    batch_parser = subparsers.add_parser("selection-batches", help="查询选课批次")
+    batch_parser.add_argument("--term", type=str, default="", help="学期代码")
+
+    # 评教状态
+    eval_parser = subparsers.add_parser("evaluation", help="查询评教状态")
+    eval_parser.add_argument("--term", type=str, default="", help="学期代码")
+
+    # 通知公告
+    notice_parser = subparsers.add_parser("notices", help="查询教务通知公告")
+    notice_parser.add_argument("--page", type=int, default=1, help="页码")
+    notice_parser.add_argument("--size", type=int, default=10, help="每页条数")
+
+    # 学期周次
+    weeks_parser = subparsers.add_parser("term-weeks", help="查询学期周次")
+    weeks_parser.add_argument("--term", type=str, default="", help="学期代码")
+
+    # 学业情况
+    subparsers.add_parser("academic-summary", help="查询学业情况汇总")
+
+    # 教室列表
+    classroom_parser = subparsers.add_parser("classrooms", help="查询教室列表")
+    classroom_parser.add_argument("--campus", type=str, default="", help="校区筛选")
 
     # 登出
     subparsers.add_parser("logout", help="获取登出URL")
@@ -635,10 +1084,19 @@ def main():
         scores = api.get_scores(term_code=term)
         print(api.format_scores(scores, term))
 
+    elif args.command == "all-scores":
+        scores = api.get_all_scores()
+        print(api.format_all_scores(scores))
+
     elif args.command == "exams":
         term = args.term or api._get_current_term_code()
         exams = api.get_exams(term_code=term)
         print(api.format_exams(exams, term))
+
+    elif args.command == "retake-exams":
+        term = args.term or api._get_current_term_code()
+        exams = api.get_retake_exams(term_code=term)
+        print(api.format_retake_exams(exams, term))
 
     elif args.command == "rooms":
         campus_map = {"沙河": "10", "小营": "小营"}
@@ -651,6 +1109,46 @@ def main():
             section=args.section,
         )
         print(api.format_empty_classrooms(result))
+
+    elif args.command == "info":
+        info = api.get_student_info()
+        print(api.format_student_info(info))
+
+    elif args.command == "status":
+        info = api.get_student_status()
+        print(api.format_student_status(info))
+
+    elif args.command == "selected-courses":
+        term = args.term or api._get_current_term_code()
+        courses = api.get_selected_courses(term_code=term)
+        print(api.format_selected_courses(courses, term))
+
+    elif args.command == "selection-batches":
+        term = args.term or api._get_current_term_code()
+        batches = api.get_course_selection_batches(term_code=term)
+        print(api.format_course_selection_batches(batches, term))
+
+    elif args.command == "evaluation":
+        term = args.term or api._get_current_term_code()
+        data = api.get_evaluation_status(term_code=term)
+        print(api.format_evaluation_status(data, term))
+
+    elif args.command == "notices":
+        data = api.get_notices(page=args.page, page_size=args.size)
+        print(api.format_notices(data))
+
+    elif args.command == "term-weeks":
+        term = args.term or api._get_current_term_code()
+        weeks = api.get_term_weeks(term_code=term)
+        print(api.format_term_weeks(weeks, term))
+
+    elif args.command == "academic-summary":
+        data = api.get_academic_summary()
+        print(api.format_academic_summary(data))
+
+    elif args.command == "classrooms":
+        rooms = api.get_classroom_list(campus=args.campus)
+        print(api.format_classroom_list(rooms))
 
     elif args.command == "logout":
         url = api.get_logout_url()
